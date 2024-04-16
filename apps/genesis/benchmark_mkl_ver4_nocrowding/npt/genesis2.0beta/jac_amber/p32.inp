@@ -1,0 +1,42 @@
+[INPUT]
+prmtopfile = ../../../inputs/jac_amber/step3_input.parm7
+ambcrdfile = ../../../inputs/jac_amber/step3_input.rst7
+rstfile    = ../../../inputs/jac_amber/equil.rst
+
+[OUTPUT]
+
+[ENERGY]
+forcefield       =  AMBER
+electrostatic    =    PME
+switchdist       =      8
+cutoffdist       =      8
+pairlistdist     =    9.5
+pme_ngrid_x      =     48
+pme_ngrid_y      =     48
+pme_ngrid_z      =     48
+pme_nspline      =      4
+
+[DYNAMICS]
+integrator       =   VVER
+nsteps           =  10000
+timestep         =  0.002
+eneout_period    =    100
+nbupdate_period  =     10
+
+[CONSTRAINTS]
+rigid_bond       =    YES
+water_model      =    WAT
+
+[ENSEMBLE]
+ensemble         =    NPT
+tpcontrol        =  BUSSI       # thermostat and barostat
+temperature      =    300
+pressure         =    1.0       # atm
+group_tp         =    YES
+
+[BOUNDARY]
+type             =   PBC
+box_size_x       =     2
+box_size_y       =     4
+box_size_z       =     4
+

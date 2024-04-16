@@ -1,0 +1,27 @@
+diff --git a/clients/drcachesim/tracer/raw2trace.cpp b/clients/drcachesim/tracer/raw2trace.cpp
+index 92af0ea38..115710db5 100644
+--- a/clients/drcachesim/tracer/raw2trace.cpp
++++ b/clients/drcachesim/tracer/raw2trace.cpp
+@@ -810,7 +810,8 @@ raw2trace_t::process_offline_entry(raw2trace_thread_data_t *tdata,
+         std::stringstream ss;
+         ss << "Unknown trace type " << (int)in_entry->timestamp.type;
+         tdata->error = ss.str();
+-        return false;
++        //return false;
++	return true;
+     }
+     size_t size = reinterpret_cast<trace_entry_t *>(buf) - buf_base;
+     if ((uint)size >= WRITE_BUFFER_SIZE) {
+diff --git a/core/unix/signal.c b/core/unix/signal.c
+index 98648d2e8..23ae02ae9 100644
+--- a/core/unix/signal.c
++++ b/core/unix/signal.c
+@@ -940,7 +940,7 @@ get_clone_record(reg_t xsp)
+      * before get_clone_record() is called.
+      */
+ #ifdef AARCH64
+-    dstack_base = (byte *)ALIGN_FORWARD(xsp, PAGE_SIZE) + PAGE_SIZE;
++    dstack_base = (byte *)ALIGN_FORWARD(xsp, PAGE_SIZE);// + PAGE_SIZE;
+ #else
+     dstack_base = (byte *)ALIGN_FORWARD(xsp, PAGE_SIZE);
+ #endif

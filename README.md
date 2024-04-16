@@ -1,1 +1,194 @@
-# performance_projection_sc2024
+Roofline projection workflow
+============================
+
+The workflow presented in this project can be splitted in 3 parts: analysis, parsing and data processing.
+
+Analysis can be done with any software as long as the results are correctly parsed in csv format for the data processing.
+
+The first part of the workflow is the application and machine analysis.
+
+For the application analysis, our workflow relies on ArmIE (Version 21.x and higher). We also use linux perf for cache analysis and simple time measurement for the performance computation.
+
+Application analysis workflow with ArmIE
+----------------------------------------
+
+First, download and install Armie from this link [Download](https://developer.arm.com/downloads/-/arm-instruction-emulator). 
+
+Then, copy the content of clients folder in Armie's samples directory. This contains the source code of the client and modification to existing armie files.
+ 
+
+```
+cp  clients/samples/* PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples
+cp  clients/drreg_emulate_sve.h PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/ext/include/
+
+```
+
+Then compile client in samples directory as done in this [tutorial](https://developer.arm.com/documentation/102190/22-0/Tutorials/Building-custom-analysis-instrumentation) and copy them to the samples/bin64/ folder.
+
+```
+
+cd PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples
+cmake -DSVE_EMULATE=On .
+make
+cp PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples/bin/libflops_bytes.so PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples/bin/libmemtrace_sg_sve_utils.so PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples/bin/libmemtrace_sve_utils.so  PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples/bin64
+
+```
+
+Make sure to use a recent compiler for compiling clients (use -DCMAKE\_CXX\_COMPILER and -DCMAKE\_C\_COMPILER flags).
+
+Now the client called "libflops_bytes.so" should be up and running.
+
+
+Application analysis workflow with DynamoRIO
+----------------------------------------
+
+See analysis_workflow/dynamorio/README.md
+
+Run 
+---
+
+For simple OI analysis without ROI:
+
+```
+armie -e libmemtrace_sve_256.so -i libflops_bytes.so -- <executable> <arguments>
+
+```
+
+For OI analysis with ROI:
+
+Include the include/roi_headers.h file in your application source code. It contains the magic instructions used by Armie clients (Only Aarch64 compatible).
+
+Use __START_TRACE(); and __STOP_TRACE(); in the source code to delimit the region-Of-Interest
+
+
+```
+armie -e libmemtrace_sve_256.so -i libflops_bytes.so -a -roi -- <executable> <arguments>
+
+```
+
+For OI analysis with ROI only on app instructions:
+
+```
+armie -e libmemtrace_sve_256.so -i libflops_bytes.so -a -roi_only_from_app -- <executable> <arguments>
+
+```
+
+Note: You can change the SVE vector size emulated by ArmIE by changing the -e flag with libmemtrace_sve_$size.so 
+
+
+Armie Output
+------------
+
+Armie prints the analysis results in the stdout that can be copied in the csv file with the headers contained in headers/empty_armie_results.csv
+
+An example of armie output is :
+
+```
+
+appname_1980915,1980916,2604613578,22029039383,0.118235,1141262738
+appname_1980915,1980917,2604613578,22030176807,0.118229,1141262738
+appname_1980915,1980915,2604613578,22030934911,0.118225,1141262738
+
+
+```
+Note : appname_$PID is the default name, you can change it afterward for lisibility. You can keep it but you would need the same identifier for cache and time analysis.
+
+
+Cache Analysis
+--------------
+
+We used two tools for cache analysis : linux perf for validation and [drcachesim](https://dynamorio.org/sec_drcachesim_tools.html#sec_tool_cache_sim) for epi_like projection. 
+
+See the drcachesim documentation for further documentation on its usage.
+
+
+In this repository, we have only linked the scripts used for the analysis and parsing of perf output: scripts/perf_run.sh and scripts/perf_cache_processing.py .
+
+```
+
+scripts/perf_run.sh <executable> <argument>
+
+```
+
+It will generate a perf_results_<executable>.out file in your current directory.
+
+Then execute scripts/perf_cache_processing.py scripts to process the .out file and print results in your stdout.
+
+```
+
+scripts/perf_cache_processing.py perf_results_<executable>.out
+
+```
+
+Headers of the csv cache results files can be seen in headers/empty_cache_results.csv
+
+Note: This script has only been tested on Graviton2 and Graviton3 machine with "l1d_cache,l1d_cache_refill,l2d_cache,l1d_cache_refill,ll_cache_rd,ll_cache_miss_rd" hardware counters.
+
+See this link for more information on the counters: [Link](https://armkeil.blob.core.windows.net/developer/Files/pdf/white-paper/neoverse-n1-core-performance-v2.pdf)
+
+Time Analysis
+-------------
+
+Measure the execution time in seconds of the application and fill the csv file by hand. See the empty headers in headers/empty_run_results.csv.
+
+Machine Description
+-------------------
+
+This was also done by hand as the input for [High Performance Linpack](https://www.netlib.org/benchmark/hpl/) and [Stream](https://www.cs.virginia.edu/stream/) benchmarking is machine-dependent. 
+
+We also used the Stream benchmark with vectors size equal to the cache size to measure cache levels bandwidth.
+
+Machine description csv headers can be found in the headers/empty_machine.csv
+
+This is where we can extrapolate stream and HPL values to represent an hypothetical machine.
+
+
+Data processing 
+---------------
+
+You can run scripts/roofline_projection.py with input csv files obtained with armie, cache and time analysis and machine description.
+
+See ./scripts/roofline_projection.py --help for further documentation.
+
+Article results reproduction
+----------------------------
+
+All the data needed to reproduce the results presented in the article are contained in the results/ folder.
+
+Results needed for validation are in the results/validation folder.
+
+Command line to generate a graph similar to the validation (without the target performance) results :
+
+```
+
+./scripts/roofline_projection.py ./results/validation/*.csv ./results/validation/machines/*.csv --sa ep_n1,mg_n1,cg_n1,ft_n1,bt_n1,sp_n1,lu_n1,lul_n1,lmp_n1 --sm aws_neoverse_n1_64core --ta ep_v1,mg_v1,cg_v1,ft_v1,bt_v1,sp_v1,lu_v1,lul_v1,lmp_v1 --tm aws_neoverse_v1_64core --plot_bar
+
+
+./scripts/roofline_projection.py ./results/validation/*.csv ./results/validation/machines/*.csv --ta ep_n1,mg_n1,cg_n1,ft_n1,bt_n1,sp_n1,lu_n1,lul_n1,lmp_n1 --tm aws_neoverse_n1_64core --sa ep_v1,mg_v1,cg_v1,ft_v1,bt_v1,sp_v1,lu_v1,lul_v1,lmp_v1 --sm aws_neoverse_v1_64core --plot_bar
+
+```
+
+Results needed for projection toward an epi-like machine on LULESH are in the results/epi_projection/ folder.
+
+Command line to generate a graph similar to the projection on epi-like results:
+
+```
+
+./scripts/roofline_projection.py results/epi_projection/*.csv results/epi_projection/machines/neoverse_v1.csv --sa lul_gcc_v1,lul_gcc_v1_sve,lul_armclang_v1,lul_armclang_v1_sve --sm aws_neoverse_v1_64core --ta lul_gcc_v1_big,lul_gcc_v1_big_sve,lul_armclang_v1_big,lul_armclang_v1_big_sve --tm epi_like --plot_bar
+
+```
+
+Folders
+-------
+
+* clients -> Contains the sample folder to copy in armie source
+* include -> Contains the markers headers for source code RoI analysis
+* headers -> Contains the empty headers of csv file needed for roofline projection
+* scripts -> Contains scripts needed for data processing
+* results -> Contains all the data needed to reproduce the results presented in the article in validation/ and epi_projection/ folders
+* reproduction -> Contains the source code of the small kernels used to reproduce the OI behavior on KNL
+
+Contact
+----------
+
+Feel free to ask any question at: clement.gavoille@protonmail.com

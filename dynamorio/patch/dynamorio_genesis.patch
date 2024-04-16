@@ -1,0 +1,31 @@
+diff --git a/clients/drcachesim/tracer/tracer.cpp b/clients/drcachesim/tracer/tracer.cpp
+index 7cf412dca..5c17adb8b 100644
+--- a/clients/drcachesim/tracer/tracer.cpp
++++ b/clients/drcachesim/tracer/tracer.cpp
+@@ -1255,6 +1255,10 @@ event_app_instruction(void *drcontext, void *tag, instrlist_t *bb, instr_t *inst
+         return flags;
+     }
+ 
++    // I dont want to deal with scatter/gather
++    if (instr_is_scatter(instr_fetch) || instr_is_gather(instr_fetch))
++        return flags;
++
+     /* We usually need two scratch registers, but not always, so we push the 2nd
+      * out into the instru_t routines.
+      * reg_ptr must be ECX or RCX for jecxz on x86, and must be <= r7 for cbnz on ARM.
+@@ -1398,11 +1402,12 @@ event_bb_app2app(void *drcontext, void *tag, instrlist_t *bb, bool for_trace,
+     per_thread_t *pt = (per_thread_t *)drmgr_get_tls_field(drcontext, tls_idx);
+     if (!drutil_expand_rep_string_ex(drcontext, bb, &pt->repstr, NULL)) {
+         DR_ASSERT(false);
+-        /* in release build, carry on: we'll just miss per-iter refs */
+     }
+-    if (!drx_expand_scatter_gather(drcontext, bb, &pt->scatter_gather)) {
++    
++    pt->scatter_gather=false;
++    /*if (!drx_expand_scatter_gather(drcontext, bb, &pt->scatter_gather)) {
+         DR_ASSERT(false);
+-    }
++    }*/
+     return DR_EMIT_DEFAULT;
+ }
+ 
