@@ -1,13 +1,13 @@
 Roofline projection workflow
 ============================
 
-The workflow presented in this project can be splitted in 3 parts: analysis, parsing and data processing.
+The workflow presented in this project can be splitted in 3 parts: analysis, data formatting and data processing.
 
 Analysis can be done with any software as long as the results are correctly parsed in csv format for the data processing.
 
 The first part of the workflow is the application and machine analysis.
 
-For the application analysis, our workflow relies on ArmIE (Version 21.x and higher). We also use linux perf for cache analysis and simple time measurement for the performance computation.
+For the application analysis, our workflow relies on DynamoRIO (Version 10.0.x and higher).
 
 Application analysis workflow with ArmIE
 ----------------------------------------
@@ -42,56 +42,45 @@ Now the client called "libflops_bytes.so" should be up and running.
 Application analysis workflow with DynamoRIO
 ----------------------------------------
 
-See analysis_workflow/dynamorio/README.md
+## Installing Dynamorio
 
-Run 
----
+See this [tutorial](https://dynamorio.org/page_building.html).
 
-For simple OI analysis without ROI:
+NOTE FOR A64FX ANALYSIS: 
 
-```
-armie -e libmemtrace_sve_256.so -i libflops_bytes.so -- <executable> <arguments>
+On DynamoRIO 10.0 release, this small tweak is necessary for multi-threaded analysis on A64FX:
 
 ```
-
-For OI analysis with ROI:
-
-Include the include/roi_headers.h file in your application source code. It contains the magic instructions used by Armie clients (Only Aarch64 compatible).
-
-Use __START_TRACE(); and __STOP_TRACE(); in the source code to delimit the region-Of-Interest
-
-
-```
-armie -e libmemtrace_sve_256.so -i libflops_bytes.so -a -roi -- <executable> <arguments>
-
+git apply patch dynamorio/patch/dynamorio.patch
 ```
 
-For OI analysis with ROI only on app instructions:
+The issue is tracked [here](https://github.com/DynamoRIO/dynamorio/issues/6451).
 
-```
-armie -e libmemtrace_sve_256.so -i libflops_bytes.so -a -roi_only_from_app -- <executable> <arguments>
+## Installing clients 
 
-```
+Run cmake -DDynamoRIO_DIR="<path>/<to>/<dynamorio>/<root>/cmake" clients/ ; make
 
-Note: You can change the SVE vector size emulated by ArmIE by changing the -e flag with libmemtrace_sve_$size.so 
+Compiled libraries will be found in ./bin/lib${client_name}.so. 
 
+Make sure to use a recent compiler for compiling clients (aka not the default gcc 4.8.5) (use -DCMAKE_CXX_COMPILER and -DCMAKE_C_COMPILER flags).
 
-Armie Output
-------------
+We have two versions of our clients: normal and genesis.
 
-Armie prints the analysis results in the stdout that can be copied in the csv file with the headers contained in headers/empty_armie_results.csv
+genesis client disable processing of SVE scatter_gather instructions because of unsupported instructions by current version of DynamoRIO. It should be fixed in later releases.
 
-An example of armie output is :
+## Run 
 
-```
+For OI analysis :
 
-appname_1980915,1980916,2604613578,22029039383,0.118235,1141262738
-appname_1980915,1980917,2604613578,22030176807,0.118229,1141262738
-appname_1980915,1980915,2604613578,22030934911,0.118225,1141262738
+drrun -c ./bin/libflops_bytes_noroi.so  -- <executable> <arguments>
 
+Results are in the flops_bytes_PID.log file in you current directory in csv format.
 
-```
-Note : appname_$PID is the default name, you can change it afterward for lisibility. You can keep it but you would need the same identifier for cache and time analysis.
+## Run with script
+
+You can run an OI analysis with the ./run_scripts/run_drrun.sh command. 
+
+OpenMP environment can be sourced within the script with the -o option.
 
 
 Cache Analysis
