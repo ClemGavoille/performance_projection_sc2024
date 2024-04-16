@@ -9,36 +9,6 @@ The first part of the workflow is the application and machine analysis.
 
 For the application analysis, our workflow relies on DynamoRIO (Version 10.0.x and higher).
 
-Application analysis workflow with ArmIE
-----------------------------------------
-
-First, download and install Armie from this link [Download](https://developer.arm.com/downloads/-/arm-instruction-emulator). 
-
-Then, copy the content of clients folder in Armie's samples directory. This contains the source code of the client and modification to existing armie files.
- 
-
-```
-cp  clients/samples/* PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples
-cp  clients/drreg_emulate_sve.h PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/ext/include/
-
-```
-
-Then compile client in samples directory as done in this [tutorial](https://developer.arm.com/documentation/102190/22-0/Tutorials/Building-custom-analysis-instrumentation) and copy them to the samples/bin64/ folder.
-
-```
-
-cd PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples
-cmake -DSVE_EMULATE=On .
-make
-cp PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples/bin/libflops_bytes.so PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples/bin/libmemtrace_sg_sve_utils.so PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples/bin/libmemtrace_sve_utils.so  PATH/TO/ARMIE/ROOT/arm-instruction-emulator-<xx.y>_Generic-AArch64_<OS>_aarch64-linux/samples/bin64
-
-```
-
-Make sure to use a recent compiler for compiling clients (use -DCMAKE\_CXX\_COMPILER and -DCMAKE\_C\_COMPILER flags).
-
-Now the client called "libflops_bytes.so" should be up and running.
-
-
 Application analysis workflow with DynamoRIO
 ----------------------------------------
 
@@ -58,7 +28,11 @@ The issue is tracked [here](https://github.com/DynamoRIO/dynamorio/issues/6451).
 
 ## Installing clients 
 
-Run cmake -DDynamoRIO_DIR="<path>/<to>/<dynamorio>/<root>/cmake" clients/ ; make
+Run 
+
+```
+cmake -DDynamoRIO_DIR="<path>/<to>/<dynamorio>/<root>/cmake" clients/ ; make
+```
 
 Compiled libraries will be found in ./bin/lib${client_name}.so. 
 
@@ -72,7 +46,9 @@ genesis client disable processing of SVE scatter_gather instructions because of 
 
 For OI analysis :
 
+```
 drrun -c ./bin/libflops_bytes_noroi.so  -- <executable> <arguments>
+```
 
 Results are in the flops_bytes_PID.log file in you current directory in csv format.
 
