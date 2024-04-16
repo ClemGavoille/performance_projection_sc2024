@@ -15,7 +15,6 @@ font = {'size'   : 16}
 plt.rc('font', **font)
 plt.rcParams["figure.figsize"] = (12.8,6.4)
 
-res_MCA=[5.146213921,13.10565074,5.922154256,7.080814605,1.37196715,3.575308527]
 res_MCA=[3.575308527,1.37196715,13.10565074,7.080814605,5.922154256,5.146213921]
 
 qws_MCA=[0.7126971259]
@@ -239,5 +238,4 @@ def plot_barchart_scaling(res,title,filename,add_MCA=False):
 plot_barchart_scaling(inputdf[(inputdf["Appli"] =="CG-OMP") | (inputdf["Appli"] == "FT-OMP")],"Comparison of projection with and with scaling \n of the source thread input on CG-OMP and FT-OMP","figures/projection_scaling.svg")
 plot_barchart_bigapp(inputdf[inputdf["Run"] == "bigapp_study"],"Projections on QWS_small, QWS_large, and genesis \n on three target configurations","figures/projection_qws.svg")
 plot_barchart_validation(inputdf[inputdf["Run"] == "validation"],"Comparison between model projections, gem5 and MCA \n simulations on the predicted speedup","figures/projection_validation.svg")
-#plot_barchart_qws_gen(res_QWS,["A64FX_S","LARC_C","LARC_A","A64FX_S","LARC_C","LARC_A","A64FX_S","LARC_C","LARC_A"],["Projected speedup median"],"Projected speedup of QWS (small), QWS (large), and genesis \n on 3 target configurations","projection_qws.svg")
 
