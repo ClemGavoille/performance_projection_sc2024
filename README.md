@@ -31,19 +31,19 @@ DynamoRIO needs to be compiled again after applying patch for processing genesis
 Installing client for Operational Intensity analysis
 ----------------------------------------
 
-Run 
+Run from dynamorio/clients
 
 ```
 cmake -DDynamoRIO_DIR="<path>/<to>/<dynamorio>/<root>/cmake" clients/ ; make
 ```
 
-Compiled libraries will be found in ./bin/lib${client_name}.so. 
+Compiled libraries will be found in dynamorio/clients/bin/lib${client_name}.so. 
 
 Make sure to use a recent compiler for compiling clients (aka not the default gcc 4.8.5) (use -DCMAKE_CXX_COMPILER and -DCMAKE_C_COMPILER flags).
 
 We have two versions of our clients: normal and genesis.
 
-genesis client disable processing of SVE scatter_gather instructions because of unsupported instructions by current version of DynamoRIO. It should be fixed in later releases.
+genesis client disable processing of SVE scatter_gather instructions because of unsupported instructions by current version of DynamoRIO. It should be fixed in later releases. The impact of skipping these instructions is minimal when compared with cache numbers obtained with linux perf.
 
 
 Running Operational Intensity analysis
@@ -55,7 +55,7 @@ Running Operational Intensity analysis
 drrun -c ./bin/libflops_bytes_noroi.so  -- <executable> <arguments>
 ```
 
-Results are in the flops_bytes_PID.log file in you current directory in csv format.
+Results are in the flops_bytes_PID.log file in you current directory in CSV format.
 
 ## Run with script
 
@@ -98,47 +98,40 @@ This is where we can extrapolate stream and HPL values to represent an hypotheti
 Data processing 
 ---------------
 
-You can run scripts/roofline_projection.py with input csv files obtained with armie, cache and time analysis and machine description.
+scripts/roofline_projection.py needs data of OI analysis, cache simulation, runtime measurement, and machine description to be in the correct CSV format as input files .
+
+The data used in paper can be found in experiments/ as all_OI_analysis.csv, all_cache_analysis.csv, and run.csv as an example. Machine description file can be found in machines/
+
+We also give a script to process drcachesim output in scripts/dynamorio_output_processing.sh.
+
+
+Performance projection
+----------------------------
+
+Once data are formatted, run 
+```
+scripts/roofline_projection.py <OI_file> <runtime_file> <cache_file> <machine_file> --sa <source_application_id> --ta <target_application_id> --sm <source_machine_id> --tm <target_machine_id>
+```
 
 See ./scripts/roofline_projection.py --help for further documentation.
 
-Article results reproduction
-----------------------------
+## Reproducing paper results
 
-All the data needed to reproduce the results presented in the article are contained in the results/ folder.
+All the data needed to reproduce the results presented in the article are contained in the experiments/ folder.
 
-Results needed for validation are in the results/validation folder.
-
-Command line to generate a graph similar to the validation (without the target performance) results :
+As an example, to make projection between IS-OMP from A64FX to LARC_C, run:
 
 ```
-
-./scripts/roofline_projection.py ./results/validation/*.csv ./results/validation/machines/*.csv --sa ep_n1,mg_n1,cg_n1,ft_n1,bt_n1,sp_n1,lu_n1,lul_n1,lmp_n1 --sm aws_neoverse_n1_64core --ta ep_v1,mg_v1,cg_v1,ft_v1,bt_v1,sp_v1,lu_v1,lul_v1,lmp_v1 --tm aws_neoverse_v1_64core --plot_bar
-
-
-./scripts/roofline_projection.py ./results/validation/*.csv ./results/validation/machines/*.csv --ta ep_n1,mg_n1,cg_n1,ft_n1,bt_n1,sp_n1,lu_n1,lul_n1,lmp_n1 --tm aws_neoverse_n1_64core --sa ep_v1,mg_v1,cg_v1,ft_v1,bt_v1,sp_v1,lu_v1,lul_v1,lmp_v1 --sm aws_neoverse_v1_64core --plot_bar
-
+scripts/roofline_projection.py experiments/all_OI_analysis.csv experiments/run.csv experiments/all_cache_analysis machines/A64FX.csv --sa is.B.x_A64FX --ta is.B.x_LARC_C --sm CMG_A64FX --tm CMG_LARC_C
 ```
 
-Results needed for projection toward an epi-like machine on LULESH are in the results/epi_projection/ folder.
+## Plotting paper figures
 
-Command line to generate a graph similar to the projection on epi-like results:
-
-```
-
-./scripts/roofline_projection.py results/epi_projection/*.csv results/epi_projection/machines/neoverse_v1.csv --sa lul_gcc_v1,lul_gcc_v1_sve,lul_armclang_v1,lul_armclang_v1_sve --sm aws_neoverse_v1_64core --ta lul_gcc_v1_big,lul_gcc_v1_big_sve,lul_armclang_v1_big,lul_armclang_v1_big_sve --tm epi_like --plot_bar
+The scripts/plot_bar.py is used to plot these figures from the experiments/results_projection.csv
 
 ```
-
-Folders
--------
-
-* clients -> Contains the sample folder to copy in armie source
-* include -> Contains the markers headers for source code RoI analysis
-* headers -> Contains the empty headers of csv file needed for roofline projection
-* scripts -> Contains scripts needed for data processing
-* results -> Contains all the data needed to reproduce the results presented in the article in validation/ and epi_projection/ folders
-* reproduction -> Contains the source code of the small kernels used to reproduce the OI behavior on KNL
+./scripts/plot_bar.py experiments/results_projection.csv
+```
 
 Contact
 ----------
