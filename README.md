@@ -7,18 +7,16 @@ Analysis can be done with any software as long as the results are correctly pars
 
 The first part of the workflow is the application and machine analysis.
 
-For the application analysis, our workflow relies on DynamoRIO (Version 10.0.x and higher).
+For the application and cache analysis, our workflow relies on DynamoRIO (Version 10.0.x and higher).
 
-Application analysis workflow with DynamoRIO
+Installing Dynamorio
 ----------------------------------------
-
-## Installing Dynamorio
 
 See this [tutorial](https://dynamorio.org/page_building.html).
 
 NOTE FOR A64FX ANALYSIS: 
 
-On DynamoRIO 10.0 release, this small tweak is necessary for multi-threaded analysis on A64FX:
+On DynamoRIO 10.0 release, this small tweak is necessary for multi-threaded analysis on A64FX before running make install:
 
 ```
 git apply patch dynamorio/patch/dynamorio.patch
@@ -26,7 +24,12 @@ git apply patch dynamorio/patch/dynamorio.patch
 
 The issue is tracked [here](https://github.com/DynamoRIO/dynamorio/issues/6451).
 
-## Installing clients 
+There is another patch (dynamorio/patch/dynamorio_genesis.patch) for disabling the processing of SVE scatter_gather instructions with drcachesim for genesis as there are instructions that are not yet implemented.
+DynamoRIO needs to be compiled again after applying patch for processing genesis.
+
+
+Installing client for Operational Intensity analysis
+----------------------------------------
 
 Run 
 
@@ -42,9 +45,11 @@ We have two versions of our clients: normal and genesis.
 
 genesis client disable processing of SVE scatter_gather instructions because of unsupported instructions by current version of DynamoRIO. It should be fixed in later releases.
 
-## Run 
 
-For OI analysis :
+Running Operational Intensity analysis
+----------------------------------------
+
+## Command line :
 
 ```
 drrun -c ./bin/libflops_bytes_noroi.so  -- <executable> <arguments>
@@ -54,45 +59,27 @@ Results are in the flops_bytes_PID.log file in you current directory in csv form
 
 ## Run with script
 
-You can run an OI analysis with the ./run_scripts/run_drrun.sh command. 
+An example script to run client can be found in scripts/run_drrun.sh. 
 
 OpenMP environment can be sourced within the script with the -o option.
 
 
-Cache Analysis
+Running Cache Analysis
 --------------
 
-We used two tools for cache analysis : linux perf for validation and [drcachesim](https://dynamorio.org/sec_drcachesim_tools.html#sec_tool_cache_sim) for epi_like projection. 
+We use [drcachesim](https://dynamorio.org/sec_drcachesim_tools.html#sec_tool_cache_sim) for cache behavior analysis. 
 
 See the drcachesim documentation for further documentation on its usage.
 
+## Run with script
 
-In this repository, we have only linked the scripts used for the analysis and parsing of perf output: scripts/perf_run.sh and scripts/perf_cache_processing.py .
+An example script to run client can be found in scripts/run_drcachesim.sh. 
 
-```
+OpenMP environment can be sourced within the script with the -o option.
 
-scripts/perf_run.sh <executable> <argument>
 
-```
-
-It will generate a perf_results_<executable>.out file in your current directory.
-
-Then execute scripts/perf_cache_processing.py scripts to process the .out file and print results in your stdout.
-
-```
-
-scripts/perf_cache_processing.py perf_results_<executable>.out
-
-```
-
-Headers of the csv cache results files can be seen in headers/empty_cache_results.csv
-
-Note: This script has only been tested on Graviton2 and Graviton3 machine with "l1d_cache,l1d_cache_refill,l2d_cache,l1d_cache_refill,ll_cache_rd,ll_cache_miss_rd" hardware counters.
-
-See this link for more information on the counters: [Link](https://armkeil.blob.core.windows.net/developer/Files/pdf/white-paper/neoverse-n1-core-performance-v2.pdf)
-
-Time Analysis
--------------
+Source application performance measurement 
+------------------------------------------
 
 Measure the execution time in seconds of the application and fill the csv file by hand. See the empty headers in headers/empty_run_results.csv.
 
