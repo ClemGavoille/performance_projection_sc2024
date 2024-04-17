@@ -31,7 +31,7 @@ DynamoRIO needs to be compiled again after applying patch for processing genesis
 Installing client for Operational Intensity analysis
 ----------------------------------------
 
-Run from dynamorio/clients
+Run from dynamorio/ folder:
 
 ```
 cmake -DDynamoRIO_DIR="<path>/<to>/<dynamorio>/<root>/cmake" clients/ ; make
@@ -52,14 +52,16 @@ Running Operational Intensity analysis
 ## Command line :
 
 ```
-drrun -c ./bin/libflops_bytes_noroi.so  -- <executable> <arguments>
+drrun -c <client_binary>  -- <executable> <arguments>
 ```
 
 Results are in the flops_bytes_PID.log file in you current directory in CSV format.
 
 ## Run with script
 
-An example script to run client can be found in scripts/run_drrun.sh. 
+An example script to run client can be found in scripts/run_drrun.sh and scripts/run_drrun_mpi.sh.
+
+Before using the script, you need to add the path to your dynamorio root installation and our own binary clients folder.
 
 OpenMP environment can be sourced within the script with the -o option.
 
@@ -71,11 +73,17 @@ We use [drcachesim](https://dynamorio.org/sec_drcachesim_tools.html#sec_tool_cac
 
 See the drcachesim documentation for further documentation on its usage.
 
+This cache simulation is done in 3 steps: memory trace collection, trace pre-processing, trace processing with each cache configuration.
+
 Our cache configurations can be found in caches/
 
 ## Run with script
 
-An example script to run client can be found in scripts/run_drcachesim.sh. 
+An example script to run client can be found in scripts/run_drcachesim.sh and scripts/run_drcachesim_mpi.sh. 
+
+Before using the script, you need to add the path to your dynamorio root installation and the folder that will contain traces (They can be heavy).
+
+Default trace path is the current folder.
 
 OpenMP environment can be sourced within the script with the -o option.
 
