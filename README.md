@@ -1,5 +1,5 @@
-Roofline projection workflow
-============================
+Performance projection with Roofline
+====================================
 
 The workflow presented in this project can be splitted in 3 parts: analysis, data formatting and data processing.
 
@@ -71,6 +71,8 @@ We use [drcachesim](https://dynamorio.org/sec_drcachesim_tools.html#sec_tool_cac
 
 See the drcachesim documentation for further documentation on its usage.
 
+Our cache configurations can be found in caches/
+
 ## Run with script
 
 An example script to run client can be found in scripts/run_drcachesim.sh. 
@@ -102,7 +104,13 @@ scripts/roofline_projection.py needs data of OI analysis, cache simulation, runt
 
 The data used in paper can be found in experiments/ as all_OI_analysis.csv, all_cache_analysis.csv, and run.csv as an example. Machine description file can be found in machines/
 
-We also give a script to process drcachesim output in scripts/dynamorio_output_processing.sh.
+We also give a script to process drcachesim (for our cache configurations) output in scripts/
+
+Run
+
+```
+scripts/dynamorio_cache_greps.sh <drcachesim_output_files> | python3 scripts/dynamorio_output_processing.py | sed "s/ /,/g"
+```
 
 
 Performance projection
